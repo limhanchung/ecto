@@ -161,10 +161,10 @@ if Code.ensure_loaded?(Postgrex) do
       includes = opts[:include] || :error
 
       field = opts[:field] || :error
-      fields = Enum.filter(header, fn(x) ->
+      fields = Enum.with_index(header, 1)
+      fields = Enum.filter(fields, fn(x) ->
         Enum.find(includes, &(&1 == x))
       end)
-      fields = Enum.with_index(fields, 1)
       fields = Enum.map fields, fn {k,v} -> "#{quote_name(k)} = $#{v}" end
       
       assemble(["INSERT INTO #{quote_table(prefix, table)} ", values,      
