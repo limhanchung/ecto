@@ -83,7 +83,7 @@ defmodule Ecto.Adapters.SQL do
       # Nil ids are generated in the database.
       def upsert(repo, %{source: {prefix, source}}, params,  _autogenerate, returning, opts) do
         {fields, values} = :lists.unzip(params)
-        sql = @conn.upsert(prefix, source, fields, returning, opts)
+        sql = @conn.upsert(prefix, source, fields, returning)
         Ecto.Adapters.SQL.model(repo, @conn, sql, values, returning, opts)
       end
 
