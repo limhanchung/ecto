@@ -150,18 +150,17 @@ if Code.ensure_loaded?(Postgrex) do
       assemble(["INSERT INTO #{quote_table(prefix, table)}", values, returning(returning)])
     end
 
-		def upsert(prefix, table, fields, returning, opts) do
+		def upsert(prefix, table, header, rows, returning, opts) do
       values =
-      if fields == [] do
-        "DEFAULT VALUES"
-      else
-        "(" <> Enum.map_join(fields, ", ", &quote_name/1) <> ") " <>
-          "VALUES (" <> Enum.map_join(1..length(fields), ", ", &"$#{&1}") <> ")"
-      end
-			
+        if header == [] do
+          "VALUES " <> Enum.map_join(rows, ",", fn _ -> "(DEFAULT)" end)
+        else
+          "(" <> Enum.map_join(rows, ",", &quote_name/1) <> ") " <>
+          "VALUES " <> insert_all(rows, 1, "")
+        end			
 			includes = opts[:include] || :error
 
-      {fields, count} = Enum.map_reduce fields, 0, fn field, acc ->
+      {fields, _ } = Enum.map_reduce rows, 0, fn field, acc ->
 				field = Enum.find(includes, fn x ->
 					x == field
 				end)
@@ -172,6 +171,7 @@ if Code.ensure_loaded?(Postgrex) do
 					{"#{quote_name(field)} = $#{acc}", acc}
 				end
       end
+
 			fields = Enum.filter(fields, fn(x) -> x != nil end)
 			field = opts[:field] || :error
 						
