@@ -631,6 +631,7 @@ defmodule Ecto.Repo.Schema do
   end
 
   defp action_to_auto(:insert), do: :autogenerate
+  defp action_to_auto(:upsert), do: :autogenerate
   defp action_to_auto(:update), do: :autoupdate
 
   defp add_pk_filter!(filters, struct) do
