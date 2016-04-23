@@ -202,6 +202,10 @@ defmodule Ecto.Repo do
         Ecto.Repo.Schema.insert(__MODULE__, @adapter, struct, opts)
       end
 
+      def upsert(struct, opts \\ []) do
+        Ecto.Repo.Schema.upsert(__MODULE__, @adapter, struct, opts)
+      end
+
       def update(struct, opts \\ []) do
         Ecto.Repo.Schema.update(__MODULE__, @adapter, struct, opts)
       end
@@ -217,6 +221,11 @@ defmodule Ecto.Repo do
       def insert!(struct, opts \\ []) do
         Ecto.Repo.Schema.insert!(__MODULE__, @adapter, struct, opts)
       end
+
+			def upsert!(model, opts \\ []) do
+        Ecto.Repo.Schema.upsert!(__MODULE__, @adapter, model, opts)
+      end 
+
 
       def update!(struct, opts \\ []) do
         Ecto.Repo.Schema.update!(__MODULE__, @adapter, struct, opts)

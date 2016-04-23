@@ -9,5 +9,6 @@ Code.require_file "../cases/interval.exs", __DIR__
 Code.require_file "../cases/joins.exs", __DIR__
 Code.require_file "../cases/migrator.exs", __DIR__
 Code.require_file "../cases/preload.exs", __DIR__
+Code.require_file "../cases/upsert.exs", __DIR__
 Code.require_file "../cases/repo.exs", __DIR__
 Code.require_file "../cases/type.exs", __DIR__

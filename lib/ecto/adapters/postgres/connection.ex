@@ -150,6 +150,36 @@ if Code.ensure_loaded?(Postgrex) do
       assemble(["INSERT INTO #{quote_table(prefix, table)}", values, returning(returning)])
     end
 
+		def upsert(prefix, table, fields, returning, opts) do
+      values =
+      if fields == [] do
+        "DEFAULT VALUES"
+      else
+        "(" <> Enum.map_join(fields, ", ", &quote_name/1) <> ") " <>
+          "VALUES (" <> Enum.map_join(1..length(fields), ", ", &"$#{&1}") <> ")"
+      end
+			
+			includes = opts[:include] || :error
+
+      {fields, count} = Enum.map_reduce fields, 0, fn field, acc ->
+				field = Enum.find(includes, fn x ->
+					x == field
+				end)
+				acc = acc + 1
+				if field == nil do
+					{nil, acc}
+				else
+					{"#{quote_name(field)} = $#{acc}", acc}
+				end
+      end
+			fields = Enum.filter(fields, fn(x) -> x != nil end)
+			field = opts[:field] || :error
+						
+      assemble(["INSERT INTO #{quote_table(prefix, table)} ", values,      
+				" ON CONFLICT (", quote_name(field),") ",
+				"DO UPDATE SET ",Enum.join(fields, ", "), returning(returning)])
+    end
+
     defp insert_all([row|rows], counter, acc) do
       {counter, row} = insert_each(row, counter, "")
       insert_all(rows, counter, acc <> ",(" <> row <> ")")

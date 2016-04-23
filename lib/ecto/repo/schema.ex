@@ -117,6 +117,17 @@ defmodule Ecto.Repo.Schema do
   end
 
   @doc """
+  Implementation for `Ecto.Repo.upsert!/2`.
+  """
+  def upsert!(repo, adapter, struct_or_changeset, opts) do
+    case upsert(repo, adapter, struct_or_changeset, opts) do
+      {:ok, struct} -> struct
+      {:error, changeset} ->
+        raise Ecto.InvalidChangesetError, action: :upsert, changeset: changeset
+    end
+  end
+
+  @doc """
   Implementation for `Ecto.Repo.update!/2`.
   """
   def update!(repo, adapter, struct_or_changeset, opts) do
@@ -161,7 +172,7 @@ defmodule Ecto.Repo.Schema do
     # On insert, we always merge the whole struct into the
     # changeset as changes, except the primary key if it is nil.
     changeset = put_repo_and_action(changeset, :insert, repo)
-    changeset = surface_changes(changeset, struct, types, fields ++ assocs)
+		changeset = surface_changes(changeset, struct, types, fields ++ assocs)
 
     wrap_in_transaction(repo, adapter, opts, assocs, prepare, fn ->
       opts = Keyword.put(opts, :skip_transaction, true)
@@ -191,6 +202,61 @@ defmodule Ecto.Repo.Schema do
 
   defp do_insert(repo, _adapter, %Changeset{valid?: false} = changeset, _opts) do
     {:error, put_repo_and_action(changeset, :insert, repo)}
+  end
+
+  @doc """
+  Implementation for `Ecto.Repo.upsert/2`.
+  """
+  def upsert(repo, adapter, %Changeset{} = changeset, opts) when is_list(opts) do
+    do_upsert(repo, adapter, changeset, opts)
+  end
+
+  def upsert(repo, adapter, %{__struct__: _} = struct, opts) when is_list(opts) do
+    changeset = Ecto.Changeset.change(struct)
+    do_upsert(repo, adapter, changeset, opts)
+  end
+
+  defp do_upsert(repo, adapter, %Changeset{valid?: true} = changeset, opts) do
+    %{prepare: prepare, types: types} = changeset
+    struct = struct_from_changeset!(:upsert, changeset)
+    schema  = struct.__struct__
+    fields = schema.__schema__(:fields)
+    assocs = schema.__schema__(:associations)
+    return = schema.__schema__(:read_after_writes)
+
+    # On upsert, we always merge the whole struct into the
+    # changeset as changes, except the primary key if it is nil.
+    changeset = put_repo_and_action(changeset, :upsert, repo)
+		changeset = surface_changes(changeset, struct, types, fields ++ assocs)
+
+    wrap_in_transaction(repo, adapter, opts, assocs, prepare, fn ->
+      opts = Keyword.put(opts, :skip_transaction, true)
+      user_changeset = run_prepare(changeset, prepare)
+
+      changeset = Ecto.Embedded.prepare(user_changeset, adapter, :upsert)
+      {changeset, parents, children} = pop_assocs(changeset, assocs)
+      changeset = process_parents(changeset, parents, opts)
+
+      metadata = metadata(struct)
+      {changes, extra, return} = autogenerate_id(metadata, changeset.changes, return, adapter)
+      {changes, extra} = dump_changes!(:upsert, changes, schema, fields, extra, types, adapter)
+
+      args = [repo, metadata, changes, return, opts]
+      case apply(changeset, adapter, :upsert, extra, args) do
+        {:ok, values} ->
+          changeset
+          |> load_changes(:loaded, values, adapter)
+          |> process_children(children, user_changeset, opts)
+        {:error, _} = error ->
+          error
+        {:invalid, constraints} ->
+          {:error, constraints_to_errors(user_changeset, :upsert, constraints)}
+      end
+    end)
+  end
+
+  defp do_upsert(repo, _adapter, %Changeset{valid?: false} = changeset, _opts) do
+    {:error, put_repo_and_action(changeset, :upsert, repo)}
   end
 
   @doc """
