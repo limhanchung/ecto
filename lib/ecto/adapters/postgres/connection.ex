@@ -162,8 +162,8 @@ if Code.ensure_loaded?(Postgrex) do
 
       field = opts[:field] || :error
       fields = Enum.with_index(header, 1)
-      fields = Enum.filter(fields, fn(x) ->
-        Enum.find(includes, &(&1 == x))
+      fields = Enum.filter(fields, fn{k,v} ->
+        Enum.find(includes, &(&1 == k))
       end)
       fields = Enum.map fields, fn {k,v} -> "#{quote_name(k)} = $#{v}" end
       
