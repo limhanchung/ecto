@@ -66,6 +66,13 @@ defmodule Ecto.Adapters.SQL.Connection do
                    header :: [atom], rows :: [[atom | nil]], returning :: [atom]) :: String.t
 
   @doc """
+  Returns an UPSERT for the given `fields` in `table` returning
+  the given `returning`. 
+  """
+  @callback upsert(prefix ::String.t, table :: String.t,
+                   header :: [atom], rows :: [[atom | nil]], returning :: [atom], opts :: Keyword.t) :: String.t
+
+  @doc """
   Returns an UPDATE for the given `fields` in `table` filtered by
   `filters` returning the given `returning`.
   """
