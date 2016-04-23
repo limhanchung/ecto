@@ -155,12 +155,12 @@ if Code.ensure_loaded?(Postgrex) do
         if header == [] do
           "VALUES " <> Enum.map_join(rows, ",", fn _ -> "(DEFAULT)" end)
         else
-          "(" <> Enum.map_join(rows, ",", &quote_name/1) <> ") " <>
+          "(" <> Enum.map_join(header, ",", &quote_name/1) <> ") " <>
           "VALUES " <> insert_all(rows, 1, "")
         end			
 			includes = opts[:include] || :error
 
-      {fields, _ } = Enum.map_reduce rows, 0, fn field, acc ->
+      {fields, _ } = Enum.map_reduce header, 0, fn field, acc ->
 				field = Enum.find(includes, fn x ->
 					x == field
 				end)
